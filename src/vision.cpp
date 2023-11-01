@@ -43,7 +43,7 @@ bool Vision::configure()
   bool bStreamConfigDefined = false;
   char* streamConfig_env = NULL;
 
-  bStreamConfigDefined = node->get_parameter<std::string>("stream_config", streamConfig_rosparam);
+  bStreamConfigDefined = node_->get_parameter<std::string>("stream_config", streamConfig_rosparam);
   if (!bStreamConfigDefined)
   {
     RCLCPP_FATAL(LOGGER, "'stream_config' rosparam is not set. This is needed to set up a gstreamer pipeline.");
@@ -52,11 +52,11 @@ bool Vision::configure()
   else
   {
     camera_config_ = streamConfig_rosparam;
-    RCLCPP_INFO(LOGGER, "Using gstreamer config from rosparam: \"" << camera_config_ << "\"");
+    RCLCPP_INFO_STREAM(LOGGER, "Using gstreamer config from rosparam: \"" << camera_config_ << "\"");
   }
 
   std::string camera_type;
-  node->get_parameter<std::string>("camera_type", camera_type);
+  node_->get_parameter<std::string>("camera_type", camera_type);
 
   // Set encoding related to camera type;
   if (camera_type == "color")
@@ -78,22 +78,22 @@ bool Vision::configure()
   pixel_size_ = sensor_msgs::image_encodings::numChannels(image_encoding_) *
                 (sensor_msgs::image_encodings::bitDepth(image_encoding_) / 8);
 
-  if (node->get_parameter<std::string>("camera_name", camera_name_))
+  if (node_->get_parameter<std::string>("camera_name", camera_name_))
   {
     camera_info_manager_.setCameraName(camera_name_);
   }
   else
   {
     camera_name_ = "Camera";
-    RCLCPP_WARN(LOGGER, "camera_name param not found. Using default value: " << camera_name_);
+    RCLCPP_WARN_STREAM(LOGGER, "camera_name param not found. Using default value: " << camera_name_);
     camera_info_manager_.setCameraName(camera_name_);
   }
 
-  if (!node->get_parameter<std::string>("frame_id", frame_id_))
+  if (!node_->get_parameter<std::string>("frame_id", frame_id_))
   {
     frame_id_ = "/camera_frame";
-    RCLCPP_WARN(LOGGER, "No camera frame_id set, using frame \"" << frame_id_ << "\".");
-    node->set_parameter<std::string>("frame_id", frame_id_)("frame_id", frame_id_);
+    RCLCPP_WARN_STREAM(LOGGER, "No camera frame_id set, using frame \"" << frame_id_ << "\".");
+    node_->set_parameter(rclcpp::Parameter("frame_id", frame_id_));
   }
 
   return true;
@@ -271,13 +271,13 @@ bool Vision::loadCameraInfo()
    * The user can specify a custom camera information file when launching the nodelet.
    * Otherwise, a default information file is selected based on the sensor resolution.
    */
-  node->get_parameter<std::string>("camera_info_url_user", camera_info_);
+  node_->get_parameter<std::string>("camera_info_url_user", camera_info_);
   if (camera_info_.empty())
   {
     RCLCPP_INFO(LOGGER, "[%s]: Custom camera information file not set, using default one based on sensor resolution",
              camera_name_.c_str());
 
-    node->get_parameter<std::string>("camera_info_url_default", cam_info_default);
+    node_->get_parameter<std::string>("camera_info_url_default", cam_info_default);
     if (!cam_info_default.empty())
     {
       snprintf(cam_info_default_resolved, CAM_INFO_DEFAULT_URL_MAX_SIZE, cam_info_default.c_str(),
@@ -338,8 +338,8 @@ bool Vision::publish()
   GstClockTime bt = gst_element_get_base_time(gst_pipeline_);
 
   // Update header information
-  sensor_msgs::msg::CameraInfo cur_cinfo = camera_info_manager_.getCameraInfo();
-  sensor_msgs::msg::CameraInfoPtr cinfo;
+  auto cur_cinfo = camera_info_manager_.getCameraInfo();
+  std::shared_ptr<sensor_msgs::msg::CameraInfo> cinfo;
 
   if (cur_cinfo.height != image_height_ || cur_cinfo.width != image_width_)
   {
