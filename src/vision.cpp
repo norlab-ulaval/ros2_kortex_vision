@@ -93,7 +93,7 @@ bool Vision::configure()
   {
     frame_id_ = "/camera_frame";
     RCLCPP_WARN(LOGGER, "No camera frame_id set, using frame \"" << frame_id_ << "\".");
-    nh_private_.setParam("frame_id", frame_id_);
+    node->set_parameter<std::string>("frame_id", frame_id_)("frame_id", frame_id_);
   }
 
   return true;
@@ -186,10 +186,10 @@ bool Vision::initialize()
 
   // Calibration between ros::Time and gst timestamps
   GstClock* clock = gst_system_clock_obtain();
-  ros::Time now = ros::Time::now();
+  auto now = node_->now();
   GstClockTime ct = gst_clock_get_time(clock);
   gst_object_unref(clock);
-  time_offset_ = now.toSec() - GST_TIME_AS_USECONDS(ct) / 1e6;
+  time_offset_ = now.toSec() - GST_TIME_AS_USECONDS(ct) / 1e9;
 
   gst_element_set_state(gst_pipeline_, GST_STATE_PAUSED);
 
@@ -221,7 +221,7 @@ bool Vision::start()
   {
     case GST_STATE_CHANGE_FAILURE:
     case GST_STATE_CHANGE_NO_PREROLL:
-      RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Failed to start stream", camera_name_.c_str());
+      RCLCPP_ERROR(LOGGER, "[%s]: Failed to start stream", camera_name_.c_str());
       return false;
 
     case GST_STATE_CHANGE_ASYNC:
@@ -231,11 +231,11 @@ bool Vision::start()
       switch (ret)
       {
         case GST_STATE_CHANGE_FAILURE:
-          RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Failed to start stream", camera_name_.c_str());
+          RCLCPP_ERROR(LOGGER, "[%s]: Failed to start stream", camera_name_.c_str());
           return false;
 
         case GST_STATE_CHANGE_ASYNC:
-          RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Failed to start stream (timeout)", camera_name_.c_str());
+          RCLCPP_ERROR(LOGGER, "[%s]: Failed to start stream (timeout)", camera_name_.c_str());
           return false;
       }
     }
@@ -271,13 +271,13 @@ bool Vision::loadCameraInfo()
    * The user can specify a custom camera information file when launching the nodelet.
    * Otherwise, a default information file is selected based on the sensor resolution.
    */
-  nh_private_.getParam("camera_info_url_user", camera_info_);
+  node->get_parameter<std::string>("camera_info_url_user", camera_info_);
   if (camera_info_.empty())
   {
     RCLCPP_INFO(LOGGER, "[%s]: Custom camera information file not set, using default one based on sensor resolution",
              camera_name_.c_str());
 
-    nh_private_.getParam("camera_info_url_default", cam_info_default);
+    node->get_parameter<std::string>("camera_info_url_default", cam_info_default);
     if (!cam_info_default.empty())
     {
       snprintf(cam_info_default_resolved, CAM_INFO_DEFAULT_URL_MAX_SIZE, cam_info_default.c_str(),
@@ -338,8 +338,8 @@ bool Vision::publish()
   GstClockTime bt = gst_element_get_base_time(gst_pipeline_);
 
   // Update header information
-  sensor_msgs::CameraInfo cur_cinfo = camera_info_manager_.getCameraInfo();
-  sensor_msgs::CameraInfoPtr cinfo;
+  sensor_msgs::msg::CameraInfo cur_cinfo = camera_info_manager_.getCameraInfo();
+  sensor_msgs::msg::CameraInfoPtr cinfo;
 
   if (cur_cinfo.height != image_height_ || cur_cinfo.width != image_width_)
   {
@@ -348,7 +348,7 @@ bool Vision::publish()
                   camera_name_.c_str(), cur_cinfo.height, cur_cinfo.width, image_height_, image_width_);
   }
 
-  cinfo.reset(new sensor_msgs::CameraInfo(cur_cinfo));
+  cinfo.reset(new sensor_msgs::msg::CameraInfo(cur_cinfo));
   cinfo->height = image_height_;
   cinfo->width = image_width_;
 
@@ -388,7 +388,7 @@ bool Vision::publish()
   }
 
   // Construct Image message
-  sensor_msgs::ImagePtr img(new sensor_msgs::Image());
+  std::shared_ptr<sensor_msgs::msg::Image> img;
   img->header = cinfo->header;
 
   // Image data and metadata
@@ -446,19 +446,19 @@ bool Vision::changePipelineState(GstState state)
       return true;
 
     case GST_STATE_CHANGE_FAILURE:
-      RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Failed to change pipeline state to %s",
+      RCLCPP_ERROR(LOGGER, "[%s]: Failed to change pipeline state to %s",
                 camera_name_.c_str(), gst_element_state_get_name(state));
       return false;
 
     case GST_STATE_CHANGE_ASYNC:
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Failed to change pipeline state to %s (timeout)",
+      RCLCPP_ERROR(LOGGER, "[%s]: Failed to change pipeline state to %s (timeout)",
                 camera_name_.c_str(), gst_element_state_get_name(state));
       return false;
     }
 
     default:
-      RCLCPP_ERROR_STREAM(LOGGER, "[%s]: Unknown state change return value when trying to change pipeline state to %s",
+      RCLCPP_ERROR(LOGGER, "[%s]: Unknown state change return value when trying to change pipeline state to %s",
                 camera_name_.c_str(), gst_element_state_get_name(state));
       return false;
   }
