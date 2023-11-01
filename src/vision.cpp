@@ -43,8 +43,7 @@ bool Vision::configure()
   bool bStreamConfigDefined = false;
   char* streamConfig_env = NULL;
 
-  bStreamConfigDefined = nh_private_.getParam("stream_config", streamConfig_rosparam);
-
+  bStreamConfigDefined = node->get_parameter<std::string>("stream_config", streamConfig_rosparam);
   if (!bStreamConfigDefined)
   {
     RCLCPP_FATAL(LOGGER, "'stream_config' rosparam is not set. This is needed to set up a gstreamer pipeline.");
@@ -57,7 +56,7 @@ bool Vision::configure()
   }
 
   std::string camera_type;
-  nh_private_.getParam("camera_type", camera_type);
+  node->get_parameter<std::string>("camera_type", camera_type);
 
   // Set encoding related to camera type;
   if (camera_type == "color")
@@ -79,7 +78,7 @@ bool Vision::configure()
   pixel_size_ = sensor_msgs::image_encodings::numChannels(image_encoding_) *
                 (sensor_msgs::image_encodings::bitDepth(image_encoding_) / 8);
 
-  if (nh_private_.getParam("camera_name", camera_name_))
+  if (node->get_parameter<std::string>("camera_name", camera_name_))
   {
     camera_info_manager_.setCameraName(camera_name_);
   }
@@ -90,7 +89,7 @@ bool Vision::configure()
     camera_info_manager_.setCameraName(camera_name_);
   }
 
-  if (!nh_private_.getParam("frame_id", frame_id_))
+  if (!node->get_parameter<std::string>("frame_id", frame_id_))
   {
     frame_id_ = "/camera_frame";
     RCLCPP_WARN(LOGGER, "No camera frame_id set, using frame \"" << frame_id_ << "\".");
