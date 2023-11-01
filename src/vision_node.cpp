@@ -13,11 +13,15 @@ void sigintHandler(int signal)
     g_vision->quit();
   }
 
-  ros::shutdown();
+  rclcpp::shutdown();
 }
 
 int main(int argc, char** argv)
 {
+  rclcpp::init(argc, argv);
+  rclcpp::NodeOptions opt;
+
+  auto node = std::make_shared<ros::ObjectiveServerNode>(opt);
   ros::init(argc, argv, "kinova_vision", ros::init_options::NoSigintHandler);
   ros::NodeHandle nh, nh_private("~");
 
