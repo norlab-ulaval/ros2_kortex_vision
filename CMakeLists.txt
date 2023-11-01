@@ -1,60 +1,95 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.14)
 
 project(kinova_vision)
 
-# System Dependencies
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra)
+endif()
+
+# Ament System Dependencies
+find_package(ament_cmake REQUIRED)
+find_package(camera_calibration_parsers REQUIRED)
+find_package(camera_info_manager REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+set(THIS_PACKAGE_INCLUDE_DEPENDS
+  ament_cmake
+  camera_calibration_parsers
+  camera_info_manager
+  cv_bridge
+  image_transport
+  rclcpp
+  rclcpp_components
+  sensor_msgs
+  tf2
+  tf2_ros
+)
+
+# Other Dependencies
 find_package(PkgConfig)
+pkg_check_modules(GSTREAMER REQUIRED
+  gstreamer-1.0
+  gstreamer-app-1.0
+)
 
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
-pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+# Define targets
+include_directories(include)
+include_directories(${GSTREAMER_INCLUDE_DIRS})
 
-# Use Catkin
-find_package(catkin REQUIRED
-  COMPONENTS roscpp image_transport sensor_msgs nodelet
-  camera_calibration_parsers camera_info_manager tf
-  )
-
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES KinovaVision
-  CATKIN_DEPENDS roscpp nodelet image_transport sensor_msgs
- camera_calibration_parsers camera_info_manager
-  DEPENDS GSTREAMER GST_APP
-  )
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${GST_APP_INCLUDE_DIRS})
-
-add_library(KinovaVision src/vision.cpp)
+add_library(KinovaVision SHARED src/vision.cpp)
+ament_target_dependencies(KinovaVision
+  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_link_libraries(KinovaVision
-  ${catkin_LIBRARIES}
-  ${GSTREAMER_LIBRARIES}
-  ${GST_APP_LIBRARIES})
+  "${GSTREAMER_LIBRARIES}")
 
 add_executable(KinovaVision_node src/vision_node.cpp)
-target_link_libraries(KinovaVision_node KinovaVision
-  ${catkin_LIBRARIES}
-  ${GSTREAMER_LIBRARIES}
-  ${GST_APP_LIBRARIES})
-set_target_properties(KinovaVision_node PROPERTIES OUTPUT_NAME kinova_vision)
+ament_target_dependencies(KinovaVision_node
+  ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_link_libraries(KinovaVision_node KinovaVision)
 
 # Install directives
 install(TARGETS KinovaVision KinovaVision_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib
 )
 
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN ".svn" EXCLUDE)
+  DESTINATION include
+  PATTERN ".svn" EXCLUDE
+)
 
 install(DIRECTORY launch/calibration
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
   FILES_MATCHING PATTERN "*.ini"
-  )
+)
 
+# Include additional settings if needed
 set(CMAKE_CXX_FLAGS "-fpermissive")
+
+# Install launch files
+install(DIRECTORY launch/calibration
+  DESTINATION share/${PROJECT_NAME}/launch/calibration
+  FILES_MATCHING PATTERN "*.ini"
+)
+
+## EXPORTS
+ament_export_include_directories(
+  include
+)
+ament_export_libraries(
+  KinovaVision
+)
+ament_export_dependencies(
+)
+ament_package()
