@@ -46,27 +46,33 @@ pkg_check_modules(GSTREAMER REQUIRED
 include_directories(include)
 include_directories(${GSTREAMER_INCLUDE_DIRS})
 
-add_library(KinovaVision SHARED src/vision.cpp)
-ament_target_dependencies(KinovaVision
+add_library(${PROJECT_NAME} SHARED src/vision.cpp)
+ament_target_dependencies(${PROJECT_NAME}
   ${THIS_PACKAGE_INCLUDE_DEPENDS})
-target_link_libraries(KinovaVision
+target_link_libraries(${PROJECT_NAME}
   "${GSTREAMER_LIBRARIES}")
 
-add_executable(KinovaVision_node src/vision_node.cpp)
-ament_target_dependencies(KinovaVision_node
+add_executable(${PROJECT_NAME}_node src/vision_node.cpp)
+ament_target_dependencies(${PROJECT_NAME}_node
   ${THIS_PACKAGE_INCLUDE_DEPENDS})
-target_link_libraries(KinovaVision_node KinovaVision)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 # Install directives
-install(TARGETS KinovaVision KinovaVision_node
+install(TARGETS ${PROJECT_NAME} 
+  EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib
 )
 
-install(DIRECTORY include/
-  DESTINATION include
-  PATTERN ".svn" EXCLUDE
+install(TARGETS ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 # Include additional settings if needed
@@ -77,7 +83,7 @@ ament_export_include_directories(
   include
 )
 ament_export_libraries(
-  KinovaVision
+  ${PROJECT_NAME}
 )
 ament_export_dependencies(
 )
