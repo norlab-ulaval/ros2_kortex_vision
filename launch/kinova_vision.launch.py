@@ -38,7 +38,7 @@ def generate_launch_description():
           parameters=[
             {'camera_type': 'depth'},
             {'camera_name': 'depth'},
-            {'camera_info_url_default': 'package://kinova_vision/launch/calibration//default_depth_calib_%ux%u.ini'},
+            {'camera_info_url_default': 'package://kinova_vision/launch/calibration/default_depth_calib_%ux%u.ini'},
             {'camera_info_url_user': LaunchConfiguration('depth_camera_info_url')},
             {'frame_id': LaunchConfiguration('depth_frame_id')},
             {'stream_config': LaunchConfiguration('depth_stream_config')},
@@ -46,21 +46,21 @@ def generate_launch_description():
         ),
 
         # Color Node Configuration
-        Node(
-          package='kinova_vision',
-          executable='kinova_vision_node',
-          namespace=LaunchConfiguration('camera'),
-          name='kinova_vision_color',
-          output='both',
-          parameters=[
-            {'camera_type': 'color'},
-            {'camera_name': 'color'},
-            {'camera_info_url_default': 'package://kinova_vision/launch/calibration/default_color_calib_%ux%u.ini'},
-            {'camera_info_url_user': LaunchConfiguration('color_camera_info_url')},
-            {'frame_id': LaunchConfiguration('color_frame_id')},
-            {'stream_config': LaunchConfiguration('color_stream_config')},
-          ]
-        ),
+        # Node(
+        #   package='kinova_vision',
+        #   executable='kinova_vision_node',
+        #   namespace=LaunchConfiguration('camera'),
+        #   name='kinova_vision_color',
+        #   output='both',
+        #   parameters=[
+        #     {'camera_type': 'color'},
+        #     {'camera_name': 'color'},
+        #     {'camera_info_url_default': 'package://kinova_vision/launch/calibration/default_color_calib_%ux%u.ini'},
+        #     {'camera_info_url_user': LaunchConfiguration('color_camera_info_url')},
+        #     {'frame_id': LaunchConfiguration('color_frame_id')},
+        #     {'stream_config': LaunchConfiguration('color_stream_config')},
+        #   ]
+        # ),
 
         # Static Transformation Publishers
         Node(
