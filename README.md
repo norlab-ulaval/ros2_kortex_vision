@@ -1,11 +1,11 @@
 # Kinova Vision module package
 
 ## Overview
-This ROS package provides helper methods and launch scripts to access the Kinova Vision module depth and color streams.
+This ROS 2 package provides helper methods and launch scripts to access the Kinova Vision module depth and color streams.
 
 
-## Installation (using catkin)
-The following instructions are for ROS Kinetic Kame, running under **Ubuntu 16.04**
+## Installation (using colcon)
+The following instructions are for ROS 2, tested on Humble on Ubuntu 22.02.
 
 ### Building from Source
 
@@ -35,40 +35,32 @@ sudo apt-get install ros-kinetic-rgbd-launch
 
 To build from source, clone the latest version from this repository into your catkin workspace and compile the package.
 
-1. Create a catkin workspace
+1. Create a workspace
 ```bash
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/src/
+mkdir -p ~/colcon_ws/src
+cd ~/colcon_ws/src/
 ```
-2. Clone this git repo into `~/catkin_ws/src`
+2. Clone this git repo into `~/colcon_ws/src`
 ```bash
-git clone https://github.com/Kinovarobotics/ros_kortex_vision.git
+git clone -b ros2 https://github.com/PickNikRobotics/ros2_kortex_vision.git
 ```
 ```bash
-cd ~/catkin_ws/src/
-catkin_init_workspace 
-cd ..
-catkin_make clean
-catkin_make
-catkin_make install
-echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
-source ~/.bashrc
+cd ~/colcon_ws/
+colcon build
 ```
 
 ## Usage
 
-### Start roscore (if not already started)
-```bash
-roscore
-```
-
 ### Start kinova_vision node
 ```bash
-roslaunch kinova_vision kinova_vision.launch
+source ~/colcon_ws/setup.bash
+ros2 launch kinova_vision kinova_vision.launch.py 
 ```
 Refer to the [Launch files](#launch_files) section to see the available launch files.
 
 ### Start rviz to view both cameras
+
+*TODO* Update this
 
 ```bash
 rosrun rviz rviz
