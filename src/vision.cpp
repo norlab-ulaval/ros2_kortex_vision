@@ -64,6 +64,7 @@ bool Vision::configure()
   std::string streamConfig_rosparam = "";
   bool bStreamConfigDefined = false;
 
+  node_->declare_parameter<std::string>("stream_config");
   bStreamConfigDefined = node_->get_parameter<std::string>("stream_config", streamConfig_rosparam);
   if (!bStreamConfigDefined)
   {
@@ -77,6 +78,7 @@ bool Vision::configure()
   }
 
   std::string camera_type;
+  node_->declare_parameter<std::string>("camera_type");
   node_->get_parameter<std::string>("camera_type", camera_type);
 
   // Set encoding related to camera type;
@@ -99,6 +101,7 @@ bool Vision::configure()
   pixel_size_ = sensor_msgs::image_encodings::numChannels(image_encoding_) *
                 (sensor_msgs::image_encodings::bitDepth(image_encoding_) / 8);
 
+  node_->declare_parameter<std::string>("camera_name");
   if (node_->get_parameter<std::string>("camera_name", camera_name_))
   {
     camera_info_manager_.setCameraName(camera_name_);
@@ -110,6 +113,7 @@ bool Vision::configure()
     camera_info_manager_.setCameraName(camera_name_);
   }
 
+  node_->declare_parameter<std::string>("frame_id");
   if (!node_->get_parameter<std::string>("frame_id", frame_id_))
   {
     frame_id_ = "/camera_frame";
@@ -292,12 +296,14 @@ bool Vision::loadCameraInfo()
    * The user can specify a custom camera information file when launching the nodelet.
    * Otherwise, a default information file is selected based on the sensor resolution.
    */
+  node_->declare_parameter<std::string>("camera_info_url_user");
   node_->get_parameter<std::string>("camera_info_url_user", camera_info_);
   if (camera_info_.empty())
   {
     RCLCPP_INFO(LOGGER, "[%s]: Custom camera information file not set, using default one based on sensor resolution",
              camera_name_.c_str());
 
+    node_->declare_parameter<std::string>("camera_info_url_default");
     node_->get_parameter<std::string>("camera_info_url_default", cam_info_default);
     if (!cam_info_default.empty())
     {
