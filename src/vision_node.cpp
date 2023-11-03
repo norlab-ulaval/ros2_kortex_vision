@@ -4,13 +4,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include <signal.h>
 
-Vision* g_vision = NULL;
+std::unique_ptr<ros_kortex_vision::Vision> node;
 
 void sigintHandler(int signal)
 {
-  if (g_vision)
+  if (node)
   {
-    g_vision->quit();
+    node->quit();
   }
 
   rclcpp::shutdown();
@@ -18,20 +18,13 @@ void sigintHandler(int signal)
 
 int main(int argc, char** argv)
 {
+  // Override the default sigint handler.
+  signal(SIGINT, sigintHandler);
+
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions opt;
 
-  auto node = std::make_shared<ros::ObjectiveServerNode>(opt);
-  ros::init(argc, argv, "kinova_vision", ros::init_options::NoSigintHandler);
-  ros::NodeHandle nh, nh_private("~");
-
-  // Override the default ros sigint handler.
-  signal(SIGINT, sigintHandler);
-
-  g_vision = new Vision(nh, nh_private);
-  g_vision->run();
-
-  delete g_vision;
-
+  node = std::make_unique<ros_kortex_vision::Vision>(opt);
+  rclcpp::spin(node->getNodeBaseInterface());
   return 0;
 }

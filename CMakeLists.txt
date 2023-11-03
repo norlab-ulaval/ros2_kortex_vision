@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 project(kinova_vision)
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -69,19 +69,8 @@ install(DIRECTORY include/
   PATTERN ".svn" EXCLUDE
 )
 
-install(DIRECTORY launch/calibration
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  FILES_MATCHING PATTERN "*.ini"
-)
-
 # Include additional settings if needed
 set(CMAKE_CXX_FLAGS "-fpermissive")
-
-# Install launch files
-install(DIRECTORY launch/calibration
-  DESTINATION share/${PROJECT_NAME}/launch/calibration
-  FILES_MATCHING PATTERN "*.ini"
-)
 
 ## EXPORTS
 ament_export_include_directories(

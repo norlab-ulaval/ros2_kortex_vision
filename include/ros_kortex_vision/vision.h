@@ -30,7 +30,7 @@ class Vision
 public:
   Vision(const rclcpp::NodeOptions& options);
   ~Vision();
-
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr getNodeBaseInterface();
   void run();
   void quit();
 

@@ -1,5 +1,4 @@
 #include <ros_kortex_vision/vision.h>
-#include <ros_kortex_vision/constants.h>
 
 #include <stdio.h>
 
@@ -7,6 +6,15 @@ namespace
 {
 constexpr auto NODE_NAME = "kinova_vision";
 constexpr auto CAM_INFO_DEFAULT_URL_MAX_SIZE = 128;
+
+constexpr auto DEFAULT_BASE_FRAME_ID = "camera_link";
+constexpr auto DEFAULT_DEPTH_FRAME_ID = "camera_depth_frame";
+constexpr auto DEFAULT_COLOR_FRAME_ID = "camera_color_frame";
+
+const int RETRY_INTERVAL = 3;
+const unsigned int STATE_CHANGE_ASYNC_TIMEOUT = 15;
+const unsigned int APP_SINK_BUFFER_COUNT = 5;
+
 const auto LOGGER = rclcpp::get_logger("KinovaVisionNode");
 }
 
@@ -14,8 +22,8 @@ namespace ros_kortex_vision
 {
 Vision::Vision(const rclcpp::NodeOptions& options)
   : node_{ std::make_shared<rclcpp::Node>(NODE_NAME, options) }
-  , camera_info_manager_(nh_camera)
-  , image_transport_(nh_camera)
+  , camera_info_manager_(node_.get())
+  , image_transport_(node_)
   , gst_pipeline_(NULL)
   , gst_sink_(NULL)
   , base_frame_id_(DEFAULT_BASE_FRAME_ID)
@@ -31,17 +39,30 @@ Vision::Vision(const rclcpp::NodeOptions& options)
   , use_gst_timestamps_(false)
   , is_first_initialize_(true)
 {
+  // Start the node, raise exceptions if there are any errors on initialization.
+  if (!configure())
+  {
+    throw std::runtime_error("Failed to configure kinova vision node!");
+  }
+
+  // Spin
+  run();
 }
 
 Vision::~Vision()
 {
+  quit();
+}
+
+rclcpp::node_interfaces::NodeBaseInterface::SharedPtr Vision::getNodeBaseInterface()
+{
+  return node_->get_node_base_interface();
 }
 
 bool Vision::configure()
 {
   std::string streamConfig_rosparam = "";
   bool bStreamConfigDefined = false;
-  char* streamConfig_env = NULL;
 
   bStreamConfigDefined = node_->get_parameter<std::string>("stream_config", streamConfig_rosparam);
   if (!bStreamConfigDefined)
@@ -184,12 +205,12 @@ bool Vision::initialize()
     }
   }
 
-  // Calibration between ros::Time and gst timestamps
+  // Calibration between ros node time and gst timestamps
   GstClock* clock = gst_system_clock_obtain();
-  auto now = node_->now();
   GstClockTime ct = gst_clock_get_time(clock);
   gst_object_unref(clock);
-  time_offset_ = now.toSec() - GST_TIME_AS_USECONDS(ct) / 1e9;
+  auto now = node_->now();
+  time_offset_ = now.seconds() - static_cast<double>(GST_TIME_AS_USECONDS(ct)) / 1e6;
 
   gst_element_set_state(gst_pipeline_, GST_STATE_PAUSED);
 
@@ -354,11 +375,11 @@ bool Vision::publish()
 
   if (use_gst_timestamps_)
   {
-    cinfo->header.stamp = ros::Time(GST_TIME_AS_USECONDS(buf->pts + bt) / 1e6 + time_offset_);
+    cinfo->header.stamp = rclcpp::Time(GST_TIME_AS_USECONDS(buf->pts + bt) / 1e6 + time_offset_);
   }
   else
   {
-    cinfo->header.stamp = ros::Time::now();
+    cinfo->header.stamp = node_->now();
   }
 
   cinfo->header.frame_id = frame_id_;
@@ -480,13 +501,7 @@ void Vision::quit()
 
 void Vision::run()
 {
-  if (!configure())
-  {
-    RCLCPP_FATAL(LOGGER, "Failed to configure kinova vision node!");
-    return;
-  }
-
-  while (ros::ok() && !quit_requested_)
+  while (!quit_requested_)
   {
     if (!is_started_)
     {
@@ -510,7 +525,7 @@ void Vision::run()
 
         RCLCPP_INFO(LOGGER, "[%s]: Trying to connect... (attempt #%d)", camera_name_.c_str(), retry_count_);
 
-        ros::Duration(RETRY_INTERVAL).sleep();
+        rclcpp::sleep_for(std::chrono::seconds(RETRY_INTERVAL));
       }
     }
     else
@@ -521,10 +536,6 @@ void Vision::run()
         stop();
       }
     }
-
-    ros::spin_once();
   }
-
-  ros::spinOnce();
 }
 }
