@@ -225,7 +225,7 @@ bool Vision::initialize()
   }
   else
   {
-    RCLCPP_FATAL(LOGGER, "[%s]: Stream is PAUSED", camera_name_.c_str());
+    RCLCPP_WARN(LOGGER, "[%s]: Stream is PAUSED", camera_name_.c_str());
   }
 
   if (is_first_initialize_)
@@ -366,7 +366,6 @@ bool Vision::publish()
 
   // Update header information
   auto cur_cinfo = camera_info_manager_.getCameraInfo();
-  std::shared_ptr<sensor_msgs::msg::CameraInfo> cinfo;
 
   if (cur_cinfo.height != image_height_ || cur_cinfo.width != image_width_)
   {
@@ -375,7 +374,7 @@ bool Vision::publish()
                   camera_name_.c_str(), cur_cinfo.height, cur_cinfo.width, image_height_, image_width_);
   }
 
-  cinfo.reset(new sensor_msgs::msg::CameraInfo(cur_cinfo));
+  auto cinfo = std::make_shared<sensor_msgs::msg::CameraInfo>();
   cinfo->height = image_height_;
   cinfo->width = image_width_;
 
@@ -415,7 +414,7 @@ bool Vision::publish()
   }
 
   // Construct Image message
-  std::shared_ptr<sensor_msgs::msg::Image> img;
+  auto img = std::make_shared<sensor_msgs::msg::Image>();
   img->header = cinfo->header;
 
   // Image data and metadata
