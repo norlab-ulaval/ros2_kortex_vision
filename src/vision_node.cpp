@@ -14,6 +14,7 @@ void sigintHandler(int signal)
   }
 
   rclcpp::shutdown();
+  exit(signal);
 }
 
 int main(int argc, char** argv)
