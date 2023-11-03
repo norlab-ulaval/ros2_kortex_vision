@@ -45,10 +45,10 @@ private:
 
 private:
   // ROS elements
-  rclcpp::Node::SharedPtr node_;
-  camera_info_manager::CameraInfoManager camera_info_manager_;
+  std::shared_ptr<rclcpp::Node> node_;
+  std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
+  std::shared_ptr<image_transport::ImageTransport> image_transport_;
   image_transport::CameraPublisher camera_publisher_;
-  image_transport::ImageTransport image_transport_;
 
   // Gstreamer elements
   GstElement* gst_pipeline_;

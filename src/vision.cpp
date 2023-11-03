@@ -22,8 +22,8 @@ namespace ros_kortex_vision
 {
 Vision::Vision(const rclcpp::NodeOptions& options)
   : node_{ std::make_shared<rclcpp::Node>(NODE_NAME, options) }
-  , camera_info_manager_(node_.get())
-  , image_transport_(node_)
+  , camera_info_manager_ { std::make_shared<camera_info_manager::CameraInfoManager>(node_.get()) }
+  , image_transport_{ std::make_shared<image_transport::ImageTransport>(node_) }
   , gst_pipeline_(NULL)
   , gst_sink_(NULL)
   , base_frame_id_(DEFAULT_BASE_FRAME_ID)
@@ -104,13 +104,13 @@ bool Vision::configure()
   node_->declare_parameter<std::string>("camera_name");
   if (node_->get_parameter<std::string>("camera_name", camera_name_))
   {
-    camera_info_manager_.setCameraName(camera_name_);
+    camera_info_manager_->setCameraName(camera_name_);
   }
   else
   {
     camera_name_ = "Camera";
     RCLCPP_WARN_STREAM(LOGGER, "camera_name param not found. Using default value: " << camera_name_);
-    camera_info_manager_.setCameraName(camera_name_);
+    camera_info_manager_->setCameraName(camera_name_);
   }
 
   node_->declare_parameter<std::string>("frame_id");
@@ -232,7 +232,7 @@ bool Vision::initialize()
   {
     // Create ROS camera interface
     is_first_initialize_ = false;
-    camera_publisher_ = image_transport_.advertiseCamera("image_raw", 1);
+    camera_publisher_ = image_transport_->advertiseCamera("image_raw", 1);
   }
 
   return true;
@@ -317,9 +317,9 @@ bool Vision::loadCameraInfo()
     }
   }
 
-  if (camera_info_manager_.validateURL(camera_info_))
+  if (camera_info_manager_->validateURL(camera_info_))
   {
-    if (camera_info_manager_.loadCameraInfo(camera_info_))
+    if (camera_info_manager_->loadCameraInfo(camera_info_))
     {
       RCLCPP_INFO(LOGGER, "[%s]: Loaded camera calibration from '%s'", camera_name_.c_str(), camera_info_.c_str());
     }
@@ -365,7 +365,7 @@ bool Vision::publish()
   GstClockTime bt = gst_element_get_base_time(gst_pipeline_);
 
   // Update header information
-  auto cur_cinfo = camera_info_manager_.getCameraInfo();
+  auto cur_cinfo = camera_info_manager_->getCameraInfo();
 
   if (cur_cinfo.height != image_height_ || cur_cinfo.width != image_width_)
   {
@@ -374,10 +374,9 @@ bool Vision::publish()
                   camera_name_.c_str(), cur_cinfo.height, cur_cinfo.width, image_height_, image_width_);
   }
 
+  // Ensure camera intrinsics, etc are available in published messages
   auto cinfo = std::make_shared<sensor_msgs::msg::CameraInfo>();
-  cinfo->height = image_height_;
-  cinfo->width = image_width_;
-
+  *cinfo = cur_cinfo;
   if (use_gst_timestamps_)
   {
     cinfo->header.stamp = rclcpp::Time(GST_TIME_AS_USECONDS(buf->pts + bt) / 1e6 + time_offset_);
@@ -506,7 +505,7 @@ void Vision::quit()
 
 void Vision::run()
 {
-  while (!quit_requested_)
+  while (rclcpp::ok() && !quit_requested_)
   {
     if (!is_started_)
     {

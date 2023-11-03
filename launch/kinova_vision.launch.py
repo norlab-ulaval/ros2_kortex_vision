@@ -21,14 +21,12 @@ def generate_launch_description():
         DeclareLaunchArgument('depth_rtp_depay_element_config', default_value='rtpgstdepay', description='RTP element configuration for depth stream'),
         DeclareLaunchArgument('depth_rtsp_element_config', description='RTSP element configuration for depth stream', default_value=['rtspsrc location=', LaunchConfiguration('depth_rtsp_media_url'),' latency=30']),
         DeclareLaunchArgument('depth_stream_config', default_value=[LaunchConfiguration('depth_rtsp_element_config'), ' ! ', LaunchConfiguration('depth_rtp_depay_element_config')]),
-        LogInfo(msg=LaunchConfiguration('depth_stream_config')),
 
         # Color stream configs
         DeclareLaunchArgument('color_rtsp_media_url', description='RTSP media URL for color stream', default_value=['rtsp://', LaunchConfiguration('device'), '/color']),
         DeclareLaunchArgument('color_rtp_depay_element_config', default_value='rtph264depay', description='RTP element configuration for color stream'),
         DeclareLaunchArgument('color_rtsp_element_config', description='RTSP element configuration for color stream', default_value=['rtspsrc location=', LaunchConfiguration('color_rtsp_media_url'),' latency=30']),
         DeclareLaunchArgument('color_stream_config', default_value=[LaunchConfiguration('color_rtsp_element_config'), ' ! ', LaunchConfiguration('color_rtp_depay_element_config'),' ! avdec_h264 ! videoconvert']),
-        LogInfo(msg=LaunchConfiguration('color_stream_config')),
 
         # Depth Node Configuration
         Node(
@@ -40,7 +38,7 @@ def generate_launch_description():
           parameters=[
             {'camera_type': 'depth'},
             {'camera_name': 'depth'},
-            {'camera_info_url_default': 'package://kinova_vision/launch/calibration/default_depth_calib_%ux%u.ini'},
+            {'camera_info_url_default': 'package://kinova_vision/launch/calibration//default_depth_calib_%ux%u.ini'},
             {'camera_info_url_user': LaunchConfiguration('depth_camera_info_url')},
             {'frame_id': LaunchConfiguration('depth_frame_id')},
             {'stream_config': LaunchConfiguration('depth_stream_config')},
