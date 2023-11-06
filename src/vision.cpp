@@ -37,11 +37,6 @@ Vision::Vision(const rclcpp::NodeOptions& options)
   , use_gst_timestamps_(false)
   , is_first_initialize_(true)
 {
-  // Start the node, raise exceptions if there are any errors on initialization.
-  if (!configure())
-  {
-    throw std::runtime_error("Failed to configure kinova vision node!");
-  }
 }
 
 Vision::~Vision()
@@ -493,6 +488,12 @@ void Vision::quit()
 
 void Vision::run()
 {
+  // Start the node, raise exceptions if there are any errors on initialization.
+  if (!configure())
+  {
+    throw std::runtime_error("Failed to configure kinova vision node!");
+  }
+
   while (rclcpp::ok() && !quit_requested_)
   {
     if (!is_started_)
