@@ -21,7 +21,7 @@ namespace ros_kortex_vision
 Vision::Vision(const rclcpp::NodeOptions& options)
   : node_{ std::make_shared<rclcpp::Node>(NODE_NAME, options) }
   , camera_info_manager_ { std::make_shared<camera_info_manager::CameraInfoManager>(node_.get()) }
-  , image_transport_{ std::make_shared<image_transport::ImageTransport>(node_) }
+  , camera_publisher_{ std::make_shared<image_transport::CameraPublisher>(image_transport::create_camera_publisher(node_.get(), "image_raw")) }
   , gst_pipeline_(NULL)
   , gst_sink_(NULL)
   , base_frame_id_(DEFAULT_BASE_FRAME_ID)
@@ -42,9 +42,6 @@ Vision::Vision(const rclcpp::NodeOptions& options)
   {
     throw std::runtime_error("Failed to configure kinova vision node!");
   }
-
-  // Spin
-  run();
 }
 
 Vision::~Vision()
@@ -224,13 +221,6 @@ bool Vision::initialize()
   else
   {
     RCLCPP_WARN(node_->get_logger(), "[%s]: Stream is PAUSED", camera_name_.c_str());
-  }
-
-  if (is_first_initialize_)
-  {
-    // Create ROS camera interface
-    is_first_initialize_ = false;
-    camera_publisher_ = image_transport_->advertiseCamera("image_raw", 1);
   }
 
   return true;
@@ -428,7 +418,7 @@ bool Vision::publish()
   std::copy(buf_data, (buf_data) + (buf_size), img->data.begin());
 
   // publish the image/info
-  camera_publisher_.publish(img, cinfo);
+  camera_publisher_->publish(img, cinfo);
 
   gst_buffer_unmap(buf, &map);
   gst_sample_unref(sample);
@@ -538,6 +528,7 @@ void Vision::run()
         stop();
       }
     }
+    rclcpp::spin_some(node_);
   }
 }
 }
