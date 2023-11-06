@@ -358,8 +358,7 @@ bool Vision::publish()
   }
 
   // Ensure camera intrinsics, etc are available in published messages
-  auto cinfo = std::make_shared<sensor_msgs::msg::CameraInfo>();
-  *cinfo = cur_cinfo;
+  auto cinfo = std::make_shared<sensor_msgs::msg::CameraInfo>(cur_cinfo);
   if (use_gst_timestamps_)
   {
     cinfo->header.stamp = rclcpp::Time(GST_TIME_AS_USECONDS(buf->pts + bt) / 1e6 + time_offset_);
