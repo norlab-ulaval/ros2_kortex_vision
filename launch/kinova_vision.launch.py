@@ -1,5 +1,6 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, LogInfo
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -18,12 +19,13 @@ configurable_parameters = [
     {"name": "depth_rtp_depay_element_config", "default": "rtpgstdepay", "description": "RTP element configuration for depth stream"},
     {"name": "color_rtsp_element_config", "default": "color latency=30", "description": "RTSP element configuration for color stream"},
     {"name": "color_rtp_depay_element_config", "default": "rtph264depay", "description": "RTP element configuration for color stream"},
-    {"name": "respawn", "default": "false", "description": ""},
+    {"name": "launch_color", "default": "true", "description": "Launch the color image node"},
+    {"name": "launch_depth", "default": "true", "description": "Launch the depth image node"},
 ]
 
 
-def declare_configurable_parameters(parameters):
-    return [DeclareLaunchArgument(param["name"], default_value=param["default"], description=param["description"]) for param in parameters]
+def declare_configurable_parameters():
+    return [DeclareLaunchArgument(param["name"], default_value=param["default"], description=param["description"]) for param in configurable_parameters]
 
 
 def set_configurable_parameters(parameters):
@@ -59,6 +61,7 @@ def launch_setup(context, *args, **kwargs):
             ("image_raw/compressedDepth", "depth/image_raw/compressedDepth"),
             ("image_raw/theora", "depth/image_raw/theora"),
         ],
+        condition=IfCondition(LaunchConfiguration('launch_depth')),
     )
 
     color_node = Node(
@@ -83,6 +86,7 @@ def launch_setup(context, *args, **kwargs):
             ("image_raw/compressedDepth", "color/image_raw/compressedDepth"),
             ("image_raw/theora", "color/image_raw/theora"),
         ],
+        condition=IfCondition(LaunchConfiguration('launch_color')),
     )
 
     # Static Transformation Publishers
@@ -95,6 +99,7 @@ def launch_setup(context, *args, **kwargs):
         arguments=['-0.0195', '-0.005', '0', '0', '0', '0',
                     LaunchConfiguration('camera_link_frame_id'),
                     LaunchConfiguration('depth_frame_id')],
+        condition=IfCondition(LaunchConfiguration('launch_depth')),
     )
 
     camera_color_tf_publisher = Node(
@@ -106,12 +111,13 @@ def launch_setup(context, *args, **kwargs):
         arguments=['0', '0', '0', '0', '0', '0',
                     LaunchConfiguration('camera_link_frame_id'),
                     LaunchConfiguration('color_frame_id')],
+        condition=IfCondition(LaunchConfiguration('launch_color')),
     )
-    
+
     return [depth_node, color_node, camera_depth_tf_publisher, camera_color_tf_publisher]
 
 
 def generate_launch_description():
-    return LaunchDescription(declare_configurable_parameters(configurable_parameters) + [
+    return LaunchDescription(declare_configurable_parameters() + [
         OpaqueFunction(function=launch_setup)
     ])
