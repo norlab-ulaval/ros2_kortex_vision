@@ -117,6 +117,7 @@ def launch_setup(context, *args, **kwargs):
                 remappings=[
                     ("rgb/camera_info", "color/camera_info"),
                     ("depth/camera_info", "depth/camera_info"),
+                    ("rgb/image_rect_color", "color/image_raw"),
                     ("depth/image_rect", "depth/image_raw"),
                     ("points", "depth/color/points"),
                 ],
