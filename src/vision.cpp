@@ -112,7 +112,7 @@ bool Vision::configure()
   else
   {
     camera_name_ = "Camera";
-    RCLCPP_WARN(node_->get_logger(), "%s param not found. Using default value: %s", CAMERA_NAME_PARAM.c_str(),
+    RCLCPP_INFO(node_->get_logger(), "%s param not found. Using default value: %s", CAMERA_NAME_PARAM.c_str(),
                 camera_name_.c_str());
     camera_info_manager_->setCameraName(camera_name_);
   }
@@ -121,7 +121,7 @@ bool Vision::configure()
   if (!node_->get_parameter<std::string>(FRAME_ID_PARAM, frame_id_))
   {
     frame_id_ = "/camera_frame";
-    RCLCPP_WARN(node_->get_logger(), "No camera frame_id set, using frame '%s'", frame_id_.c_str());
+    RCLCPP_INFO(node_->get_logger(), "No camera frame_id set, using frame '%s'", frame_id_.c_str());
     node_->set_parameter(rclcpp::Parameter(FRAME_ID_PARAM, frame_id_));
   }
 
@@ -134,7 +134,7 @@ bool Vision::configure()
   }
   else
   {
-    RCLCPP_WARN(node_->get_logger(), "Should have successfully set max_pub_rate: '%f'", max_pub_rate_hz_);
+    RCLCPP_WARN(node_->get_logger(), "Using max_pub_rate: '%f'", max_pub_rate_hz_);
   }
   max_pub_rate_ = std::make_shared<rclcpp::Rate>(max_pub_rate_hz_);
 
