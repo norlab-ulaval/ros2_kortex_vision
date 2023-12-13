@@ -23,6 +23,7 @@ const std::string CAMERA_NAME_PARAM = "camera_name";
 const std::string FRAME_ID_PARAM = "frame_id";
 const std::string CAMERA_INFO_URL_USER_PARAM = "camera_info_url_user";
 const std::string CAMERA_INFO_URL_DEFAULT_PARAM = "camera_info_url_default";
+const std::string MAX_PUB_RATE_PARAM = "max_pub_rate";
 }  // namespace
 
 namespace ros_kortex_vision
@@ -111,7 +112,7 @@ bool Vision::configure()
   else
   {
     camera_name_ = "Camera";
-    RCLCPP_WARN(node_->get_logger(), "%s param not found. Using default value: %s", CAMERA_NAME_PARAM.c_str(),
+    RCLCPP_INFO(node_->get_logger(), "%s param not found. Using default value: %s", CAMERA_NAME_PARAM.c_str(),
                 camera_name_.c_str());
     camera_info_manager_->setCameraName(camera_name_);
   }
@@ -120,9 +121,22 @@ bool Vision::configure()
   if (!node_->get_parameter<std::string>(FRAME_ID_PARAM, frame_id_))
   {
     frame_id_ = "/camera_frame";
-    RCLCPP_WARN(node_->get_logger(), "No camera frame_id set, using frame '%s'", frame_id_.c_str());
+    RCLCPP_INFO(node_->get_logger(), "No camera frame_id set, using frame '%s'", frame_id_.c_str());
     node_->set_parameter(rclcpp::Parameter(FRAME_ID_PARAM, frame_id_));
   }
+
+  node_->declare_parameter<double>(MAX_PUB_RATE_PARAM);
+  if (!node_->get_parameter<double>(MAX_PUB_RATE_PARAM, max_pub_rate_hz_))
+  {
+    max_pub_rate_hz_ = 30.0;
+    RCLCPP_WARN(node_->get_logger(), "No maximum publication rate set, using max_pub_rate '%f'", max_pub_rate_hz_);
+    node_->set_parameter(rclcpp::Parameter(MAX_PUB_RATE_PARAM, max_pub_rate_hz_));
+  }
+  else
+  {
+    RCLCPP_WARN(node_->get_logger(), "Using max_pub_rate: '%f'", max_pub_rate_hz_);
+  }
+  max_pub_rate_ = std::make_shared<rclcpp::Rate>(max_pub_rate_hz_);
 
   return true;
 }
@@ -549,6 +563,7 @@ void Vision::run()
       }
     }
     rclcpp::spin_some(node_);
+    max_pub_rate_->sleep();
   }
 }
 }  // namespace ros_kortex_vision
