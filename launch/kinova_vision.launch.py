@@ -201,6 +201,18 @@ def launch_setup(context, *args, **kwargs):
                     ("depth/camera_info", "depth/camera_info"),
                     ("depth/image_rect", "depth/image_raw"),
                 ],
+                # Due to the resolution disparity between the depth images and
+                # the rgb images from the embedded D410 rgbd camera on the gen3
+                # kinova, when the depth images are registered in the color
+                # image frame, many holes occur in the registered depth data.
+                # Turning on fill_upsampling_holes spreads the lower resolution
+                # depth data out across the registered image to eliminate these
+                # holes.
+                parameters=[
+                    {
+                        "fill_upsampling_holes": True,
+                    }
+                ],
             ),
             ComposableNode(
                 package="depth_image_proc",
