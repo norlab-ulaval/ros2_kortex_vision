@@ -71,7 +71,7 @@ configurable_parameters = [
     },
     {
         "name": "depth_registration",
-        "default": "false",
+        "default": "true",
         "description": "Hardware depth registration",
     },
     {
